@@ -57,6 +57,7 @@ import { TSqlAccountCredentials, TSqlResourceConnectionDetails } from "../pam-re
 import { TSSHAccountCredentials, TSSHResourceMetadata } from "../pam-resource/ssh/ssh-resource-types";
 import { TPamSessionDALFactory } from "../pam-session/pam-session-dal";
 import { PamSessionStatus } from "../pam-session/pam-session-enums";
+import { sessionAccessDataStore } from "../pam-session/pam-session-memory-store";
 import { OrgPermissionGatewayActions, OrgPermissionSubjects } from "../permission/org-permission";
 import { TPamAccountDALFactory } from "./pam-account-dal";
 import { PamAccountView } from "./pam-account-enums";
@@ -753,6 +754,7 @@ export const pamAccountServiceFactory = ({
     }
 
     let metadata;
+    let databaseCredentials: { username: string; password: string; database: string } | null = null;
 
     switch (resourceType) {
       case PamResource.Postgres:
@@ -775,6 +777,12 @@ export const pamAccountServiceFactory = ({
             database: connectionCredentials.database,
             accountName: account.name,
             accountPath: folderPath
+          };
+
+          databaseCredentials = {
+            username: credentials.username,
+            password: credentials.password,
+            database: connectionCredentials.database
           };
         }
         break;
@@ -801,6 +809,17 @@ export const pamAccountServiceFactory = ({
       default:
         break;
     }
+
+    sessionAccessDataStore.set(session.id, {
+      relayHost: gatewayConnectionDetails.relayHost,
+      relayClientCert: gatewayConnectionDetails.relay.clientCertificate,
+      relayClientKey: gatewayConnectionDetails.relay.clientPrivateKey,
+      relayServerCertChain: gatewayConnectionDetails.relay.serverCertificateChain,
+      gatewayClientCert: gatewayConnectionDetails.gateway.clientCertificate,
+      gatewayClientKey: gatewayConnectionDetails.gateway.clientPrivateKey,
+      gatewayServerCertChain: gatewayConnectionDetails.gateway.serverCertificateChain,
+      credentials: databaseCredentials || { username: "", password: "", database: "" }
+    });
 
     return {
       sessionId: session.id,
