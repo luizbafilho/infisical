@@ -125,6 +125,7 @@ export type TAccessPamAccountDTO = {
   accountPath: string;
   projectId: string;
   duration: string;
+  isBrowserAccess?: boolean;
 };
 
 export type TAccessPamAccountResponse = {
@@ -143,14 +144,21 @@ export type TAccessPamAccountResponse = {
 
 export const useAccessPamAccount = () => {
   return useMutation({
-    mutationFn: async ({ accountId, accountPath, projectId, duration }: TAccessPamAccountDTO) => {
+    mutationFn: async ({
+      accountId,
+      accountPath,
+      projectId,
+      duration,
+      isBrowserAccess
+    }: TAccessPamAccountDTO) => {
       const { data } = await apiRequest.post<TAccessPamAccountResponse>(
         "/api/v1/pam/accounts/access",
         {
           accountId,
           accountPath,
           projectId,
-          duration
+          duration,
+          isBrowserAccess
         }
       );
 

@@ -368,7 +368,10 @@ const pamRoutes = route("/organizations/$orgId/projects/pam/$projectId", [
     route("/accounts", "pam/PamAccountsPage/route.tsx"),
     route("/sessions", [
       index("pam/PamSessionsPage/route.tsx"),
-      route("/$sessionId", "pam/PamSessionsByIDPage/route.tsx")
+      route("/$sessionId", [
+        index("pam/PamSessionsByIDPage/route.tsx"),
+        route("/query", "pam/PamSessionQueryPage/route.tsx")
+      ])
     ]),
     route("/resources", "pam/PamResourcesPage/route.tsx"),
     route("/audit-logs", "project/AuditLogsPage/route-pam.tsx"),

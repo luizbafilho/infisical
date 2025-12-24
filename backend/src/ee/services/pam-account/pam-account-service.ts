@@ -57,6 +57,7 @@ import { TSqlAccountCredentials, TSqlResourceConnectionDetails } from "../pam-re
 import { TSSHAccountCredentials, TSSHResourceMetadata } from "../pam-resource/ssh/ssh-resource-types";
 import { TPamSessionDALFactory } from "../pam-session/pam-session-dal";
 import { PamSessionStatus } from "../pam-session/pam-session-enums";
+import { sessionAccessDataStore } from "../pam-session/pam-session-memory-store";
 import { OrgPermissionGatewayActions, OrgPermissionSubjects } from "../permission/org-permission";
 import { TPamAccountDALFactory } from "./pam-account-dal";
 import { PamAccountView } from "./pam-account-enums";
@@ -552,7 +553,16 @@ export const pamAccountServiceFactory = ({
   };
 
   const access = async (
-    { accountPath, projectId, actorEmail, actorIp, actorName, actorUserAgent, duration }: TAccessAccountDTO,
+    {
+      accountPath,
+      projectId,
+      actorEmail,
+      actorIp,
+      actorName,
+      actorUserAgent,
+      duration,
+      isBrowserAccess
+    }: TAccessAccountDTO,
     actor: OrgServiceActor
   ) => {
     const orgLicensePlan = await licenseService.getPlan(actor.orgId);
@@ -753,6 +763,7 @@ export const pamAccountServiceFactory = ({
     }
 
     let metadata;
+    let databaseCredentials: { username: string; password: string; database: string } | null = null;
 
     switch (resourceType) {
       case PamResource.Postgres:
@@ -775,6 +786,12 @@ export const pamAccountServiceFactory = ({
             database: connectionCredentials.database,
             accountName: account.name,
             accountPath: folderPath
+          };
+
+          databaseCredentials = {
+            username: credentials.username,
+            password: credentials.password,
+            database: connectionCredentials.database
           };
         }
         break;
@@ -802,16 +819,32 @@ export const pamAccountServiceFactory = ({
         break;
     }
 
+    // Only store credentials in memory for browser access
+    if (isBrowserAccess) {
+      sessionAccessDataStore.set(session.id, {
+        relayHost: gatewayConnectionDetails.relayHost,
+        relayClientCert: gatewayConnectionDetails.relay.clientCertificate,
+        relayClientKey: gatewayConnectionDetails.relay.clientPrivateKey,
+        relayServerCertChain: gatewayConnectionDetails.relay.serverCertificateChain,
+        gatewayClientCert: gatewayConnectionDetails.gateway.clientCertificate,
+        gatewayClientKey: gatewayConnectionDetails.gateway.clientPrivateKey,
+        gatewayServerCertChain: gatewayConnectionDetails.gateway.serverCertificateChain,
+        credentials: databaseCredentials || { username: "", password: "", database: "" }
+      });
+    }
+
     return {
       sessionId: session.id,
       resourceType,
-      relayClientCertificate: gatewayConnectionDetails.relay.clientCertificate,
-      relayClientPrivateKey: gatewayConnectionDetails.relay.clientPrivateKey,
-      relayServerCertificateChain: gatewayConnectionDetails.relay.serverCertificateChain,
-      gatewayClientCertificate: gatewayConnectionDetails.gateway.clientCertificate,
-      gatewayClientPrivateKey: gatewayConnectionDetails.gateway.clientPrivateKey,
-      gatewayServerCertificateChain: gatewayConnectionDetails.gateway.serverCertificateChain,
-      relayHost: gatewayConnectionDetails.relayHost,
+      relayClientCertificate: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.clientCertificate,
+      relayClientPrivateKey: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.clientPrivateKey,
+      relayServerCertificateChain: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.serverCertificateChain,
+      gatewayClientCertificate: isBrowserAccess ? undefined : gatewayConnectionDetails.gateway.clientCertificate,
+      gatewayClientPrivateKey: isBrowserAccess ? undefined : gatewayConnectionDetails.gateway.clientPrivateKey,
+      gatewayServerCertificateChain: isBrowserAccess
+        ? undefined
+        : gatewayConnectionDetails.gateway.serverCertificateChain,
+      relayHost: isBrowserAccess ? undefined : gatewayConnectionDetails.relayHost,
       projectId,
       account,
       metadata

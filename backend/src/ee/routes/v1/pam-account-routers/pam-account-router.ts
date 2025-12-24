@@ -129,7 +129,8 @@ export const registerPamAccountRouter = async (server: FastifyZodProvider) => {
               return z.NEVER;
             }
             return parsedMs;
-          })
+          }),
+        isBrowserAccess: z.boolean().optional().default(false)
       }),
       response: {
         200: z.discriminatedUnion("resourceType", [
@@ -163,7 +164,8 @@ export const registerPamAccountRouter = async (server: FastifyZodProvider) => {
           actorUserAgent: req.auditLogInfo.userAgent ?? "",
           accountPath: req.body.accountPath,
           projectId: req.body.projectId,
-          duration: req.body.duration
+          duration: req.body.duration,
+          isBrowserAccess: req.body.isBrowserAccess
         },
         req.permission
       );

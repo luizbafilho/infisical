@@ -75,10 +75,32 @@ export const extractAuth = async (req: FastifyRequest, jwtSecret: string) => {
   if (apiKey) {
     return { authMode: AuthMode.API_KEY, token: apiKey, actor: ActorType.USER } as const;
   }
-  const authHeader = req.headers?.authorization;
-  if (!authHeader) return { authMode: null, token: null };
 
-  const authTokenValue = authHeader.slice(7); // slice of after Bearer
+  let authTokenValue: string | undefined;
+
+  // For WebSocket connections, check Sec-WebSocket-Protocol header
+  const isWebSocket = req.headers.upgrade === "websocket";
+  if (isWebSocket) {
+    const wsProtocol = req.headers["sec-websocket-protocol"];
+    if (wsProtocol && typeof wsProtocol === "string") {
+      // Protocol format: "bearer.TOKEN"
+      const protocols = wsProtocol.split(",").map((p) => p.trim());
+      const bearerProtocol = protocols.find((p) => p.startsWith("bearer."));
+      if (bearerProtocol) {
+        authTokenValue = bearerProtocol.substring(7); // Remove "bearer." prefix
+      }
+    }
+  }
+
+  // Fallback to Authorization header for non-WebSocket or if WebSocket protocol didn't have token
+  if (!authTokenValue) {
+    const authHeader = req.headers?.authorization;
+    if (!authHeader) return { authMode: null, token: null };
+    authTokenValue = authHeader.slice(7); // slice off "Bearer "
+  }
+
+  if (!authTokenValue) return { authMode: null, token: null };
+
   if (authTokenValue.startsWith("st.")) {
     return {
       authMode: AuthMode.SERVICE_TOKEN,

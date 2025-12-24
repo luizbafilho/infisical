@@ -1,11 +1,11 @@
 import { createFileRoute, linkOptions } from "@tanstack/react-router";
 
-import { PamSessionByIDPage } from "./PamSessionByIDPage";
+import { PamSessionQueryPage } from "./PamSessionQueryPage";
 
 export const Route = createFileRoute(
-  "/_authenticate/_inject-org-details/_org-layout/organizations/$orgId/projects/pam/$projectId/_pam-layout/sessions/$sessionId/"
+  "/_authenticate/_inject-org-details/_org-layout/organizations/$orgId/projects/pam/$projectId/_pam-layout/sessions/$sessionId/query"
 )({
-  component: PamSessionByIDPage,
+  component: PamSessionQueryPage,
   beforeLoad: ({ context, params }) => {
     return {
       breadcrumbs: [
@@ -18,7 +18,7 @@ export const Route = createFileRoute(
           })
         },
         {
-          label: "Details"
+          label: "Query Editor"
         }
       ]
     };

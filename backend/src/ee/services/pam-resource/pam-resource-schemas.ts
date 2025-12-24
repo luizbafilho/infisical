@@ -5,13 +5,13 @@ import { slugSchema } from "@app/server/lib/schemas";
 
 export const GatewayAccessResponseSchema = z.object({
   sessionId: z.string(),
-  relayClientCertificate: z.string(),
-  relayClientPrivateKey: z.string(),
-  relayServerCertificateChain: z.string(),
-  gatewayClientCertificate: z.string(),
-  gatewayClientPrivateKey: z.string(),
-  gatewayServerCertificateChain: z.string(),
-  relayHost: z.string(),
+  relayClientCertificate: z.string().optional(),
+  relayClientPrivateKey: z.string().optional(),
+  relayServerCertificateChain: z.string().optional(),
+  gatewayClientCertificate: z.string().optional(),
+  gatewayClientPrivateKey: z.string().optional(),
+  gatewayServerCertificateChain: z.string().optional(),
+  relayHost: z.string().optional(),
   metadata: z.record(z.string(), z.string().optional()).optional()
 });
 
