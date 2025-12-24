@@ -553,7 +553,16 @@ export const pamAccountServiceFactory = ({
   };
 
   const access = async (
-    { accountPath, projectId, actorEmail, actorIp, actorName, actorUserAgent, duration }: TAccessAccountDTO,
+    {
+      accountPath,
+      projectId,
+      actorEmail,
+      actorIp,
+      actorName,
+      actorUserAgent,
+      duration,
+      isBrowserAccess
+    }: TAccessAccountDTO,
     actor: OrgServiceActor
   ) => {
     const orgLicensePlan = await licenseService.getPlan(actor.orgId);
@@ -810,27 +819,32 @@ export const pamAccountServiceFactory = ({
         break;
     }
 
-    sessionAccessDataStore.set(session.id, {
-      relayHost: gatewayConnectionDetails.relayHost,
-      relayClientCert: gatewayConnectionDetails.relay.clientCertificate,
-      relayClientKey: gatewayConnectionDetails.relay.clientPrivateKey,
-      relayServerCertChain: gatewayConnectionDetails.relay.serverCertificateChain,
-      gatewayClientCert: gatewayConnectionDetails.gateway.clientCertificate,
-      gatewayClientKey: gatewayConnectionDetails.gateway.clientPrivateKey,
-      gatewayServerCertChain: gatewayConnectionDetails.gateway.serverCertificateChain,
-      credentials: databaseCredentials || { username: "", password: "", database: "" }
-    });
+    // Only store credentials in memory for browser access
+    if (isBrowserAccess) {
+      sessionAccessDataStore.set(session.id, {
+        relayHost: gatewayConnectionDetails.relayHost,
+        relayClientCert: gatewayConnectionDetails.relay.clientCertificate,
+        relayClientKey: gatewayConnectionDetails.relay.clientPrivateKey,
+        relayServerCertChain: gatewayConnectionDetails.relay.serverCertificateChain,
+        gatewayClientCert: gatewayConnectionDetails.gateway.clientCertificate,
+        gatewayClientKey: gatewayConnectionDetails.gateway.clientPrivateKey,
+        gatewayServerCertChain: gatewayConnectionDetails.gateway.serverCertificateChain,
+        credentials: databaseCredentials || { username: "", password: "", database: "" }
+      });
+    }
 
     return {
       sessionId: session.id,
       resourceType,
-      relayClientCertificate: gatewayConnectionDetails.relay.clientCertificate,
-      relayClientPrivateKey: gatewayConnectionDetails.relay.clientPrivateKey,
-      relayServerCertificateChain: gatewayConnectionDetails.relay.serverCertificateChain,
-      gatewayClientCertificate: gatewayConnectionDetails.gateway.clientCertificate,
-      gatewayClientPrivateKey: gatewayConnectionDetails.gateway.clientPrivateKey,
-      gatewayServerCertificateChain: gatewayConnectionDetails.gateway.serverCertificateChain,
-      relayHost: gatewayConnectionDetails.relayHost,
+      relayClientCertificate: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.clientCertificate,
+      relayClientPrivateKey: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.clientPrivateKey,
+      relayServerCertificateChain: isBrowserAccess ? undefined : gatewayConnectionDetails.relay.serverCertificateChain,
+      gatewayClientCertificate: isBrowserAccess ? undefined : gatewayConnectionDetails.gateway.clientCertificate,
+      gatewayClientPrivateKey: isBrowserAccess ? undefined : gatewayConnectionDetails.gateway.clientPrivateKey,
+      gatewayServerCertificateChain: isBrowserAccess
+        ? undefined
+        : gatewayConnectionDetails.gateway.serverCertificateChain,
+      relayHost: isBrowserAccess ? undefined : gatewayConnectionDetails.relayHost,
       projectId,
       account,
       metadata

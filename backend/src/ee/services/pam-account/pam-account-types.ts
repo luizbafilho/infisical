@@ -23,6 +23,7 @@ export type TAccessAccountDTO = {
   actorName: string;
   actorUserAgent: string;
   duration: number;
+  isBrowserAccess?: boolean;
 };
 
 export type TListAccountsDTO = {

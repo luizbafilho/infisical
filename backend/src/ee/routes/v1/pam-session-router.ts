@@ -2,15 +2,15 @@ import { z } from "zod";
 
 import { ActionProjectType, PamSessionsSchema } from "@app/db/schemas";
 import { EventType } from "@app/ee/services/audit-log/audit-log-types";
+import { createGatewayConnection } from "@app/ee/services/pam-gateway/gateway-connection-service";
+import { createRelayConnection } from "@app/ee/services/pam-gateway/relay-connection-service";
 import { KubernetesSessionCredentialsSchema } from "@app/ee/services/pam-resource/kubernetes/kubernetes-resource-schemas";
 import { MySQLSessionCredentialsSchema } from "@app/ee/services/pam-resource/mysql/mysql-resource-schemas";
 import { PostgresSessionCredentialsSchema } from "@app/ee/services/pam-resource/postgres/postgres-resource-schemas";
 import { SSHSessionCredentialsSchema } from "@app/ee/services/pam-resource/ssh/ssh-resource-schemas";
-import { createGatewayConnection } from "@app/ee/services/pam-gateway/gateway-connection-service";
-import { createRelayConnection } from "@app/ee/services/pam-gateway/relay-connection-service";
+import { executeQueryThroughGateway } from "@app/ee/services/pam-session/pam-query-execution-service";
 import { PamSessionStatus } from "@app/ee/services/pam-session/pam-session-enums";
 import { sessionAccessDataStore } from "@app/ee/services/pam-session/pam-session-memory-store";
-import { executeQueryThroughGateway } from "@app/ee/services/pam-session/pam-query-execution-service";
 import {
   HttpEventSchema,
   PamSessionCommandLogSchema,
@@ -319,7 +319,6 @@ export const registerPamSessionRouter = async (server: FastifyZodProvider) => {
         actionProjectType: ActionProjectType.PAM
       });
 
-
       if (!permission.can(ProjectPermissionPamSessionActions.Read, ProjectPermissionSub.PamSessions)) {
         socket.close(4403, "Forbidden: No permission to access session");
         return;
@@ -358,8 +357,6 @@ export const registerPamSessionRouter = async (server: FastifyZodProvider) => {
         const parsed = JSON.parse(msgStr as string);
         const validated = WebSocketMessageSchema.parse(parsed);
 
-        console.log("got the message", validated);
-
         const results = await executeQueryThroughGateway(
           gatewayConn!,
           validated.query,
@@ -373,7 +370,6 @@ export const registerPamSessionRouter = async (server: FastifyZodProvider) => {
             data: results
           })
         );
-
       });
 
       socket.on("close", () => {
